@@ -96,7 +96,8 @@ class StateMachine(Node):
 
         # TODO: 7.1.a Transition condition to move out of Search State
         ### STUDENT CODE HERE
-
+        if abs(turn_angle) < 0.1:  
+            self.state = State.Approaching
         ### END STUDENT CODE
         return cmd_vel
     
@@ -127,7 +128,9 @@ class StateMachine(Node):
 
         # TODO: 7.1.b Transition condition to move out of Approach State
         ### STUDENT CODE HERE
-
+        if abs(gate_fov_bound) > 0.5:#gate spans more than half image
+            self.pre_push_time = self.get_clock().now()
+            self.state = State.Passing_Through
         ### END STUDENT CODE
 
         return cmd_vel

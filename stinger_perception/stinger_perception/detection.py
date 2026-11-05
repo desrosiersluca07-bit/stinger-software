@@ -34,11 +34,11 @@ class Detection(Node):
 
         # TODO: 6.1.a Understanding HSV
         # True or False, as my Value approaches 0, the color becomes darker.
-        self.question_1 = None
+        self.question_1 = True #why is this needed
         # True or False, as my Saturation increases, the color becomes whiter.
-        self.question_2 = None
+        self.question_2 = False
         # [0, 255), what hue value might cyan be.
-        self.question_3 = None
+        self.question_3 = 90
         ### STUDENT CODE HERE
 
         ### END STUDENT CODE
@@ -67,7 +67,17 @@ class Detection(Node):
 
         # TODO: 6.1.b Masking 
         ### STUDENT CODE HERE
-
+        self.red_lower = np.array([0, 120, 50])
+        self.red_upper = np.array([10, 255, 255])
+        red_lower2 = np.array([170, 120, 50])
+        red_upper2 = np.array([179, 255, 255])
+        red_mask = cv2.inRange(self.hsv, self.red_lower, self.red_upper) | \
+                   cv2.inRange(self.hsv, red_lower2, red_upper2)
+                    ###this is quite jank but i think it works. the red hue wraps around the hue spectrum so it needs two masks.
+        self.green_lower = np.array([40, 80, 50])
+        self.green_upper = np.array([85, 255, 255])
+        green_mask = cv2.inRange(self.hsv, self.green_lower, self.green_upper)
+        ##this works becausehue for green is only between 40 and 85so it doesnt wrap like red does.
         ### END STUDENT CODE
         
         cv2.imshow("Red_mask", red_mask)
@@ -99,7 +109,8 @@ class Detection(Node):
 
         # TODO: 6.1.c Contours
         ### STUDENT CODE HERE
-
+        contours = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)[-2]
+        ##this worksbecause second to last element is contours and we dont need the hierarchy
         ### END STUDENT CODE
         detected = []
 
@@ -108,7 +119,8 @@ class Detection(Node):
             (x, y), radius = cv2.minEnclosingCircle(cnt)
             cv2.circle(self.frame, (int(x), int(y)), int(radius), (255, 0, 0), 3)
             ### STUDENT CODE HERE
-
+            if radius > 5:         #####TWEAK THIS
+                detected.append((x, y, radius))
             ### END STUDENT CODE
         cv2.imshow("original_frame", self.frame)
         detected_sorted = sorted(detected, key=lambda x: x[2], reverse=True)
