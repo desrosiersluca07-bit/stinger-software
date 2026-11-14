@@ -25,9 +25,8 @@ setup(
         'console_scripts': [
             'throttle_controller = stinger_controller.throttle_controller:main',
             'velocity_controller = stinger_controller.velocity_controller:main',
-            'acceleration_controller = stinger_controller.acceleration_controller:main',
-            'position_controller = stinger_controller.position_controller:main',
             'direct_thrust_controller = stinger_controller.direct_thrust_controller:main'
+            ##there were two more of these, hut those files legit don't exist.
         ],
     },
 )

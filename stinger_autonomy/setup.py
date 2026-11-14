@@ -21,6 +21,7 @@ setup(
     entry_points={
         'console_scripts': [
             'state_node = stinger_autonomy.state:main',
+            'obstacle_node = stinger_autonomy.obstacle_avoidance:main',  # ADDED
         ],
     },
 )

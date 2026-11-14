@@ -22,6 +22,7 @@ INITIAL_PULSE_WIDTH = 1000  # First pulse width (1.0 ms)
 MIN_PULSE_WIDTH = 1100  # Microseconds (1.1 ms)
 MAX_PULSE_WIDTH = 1900  # Microseconds (1.9 ms)
 NEUTRAL_PULSE_WIDTH = 1500 # Microseconds (1.5 ms)
+PERCENT_PER_NEWTON = 100.0 / 30.0  # ADDED: cmd_thrust arrives in Newtons (30 N = throttle_controller max = 100%)
 
 class ESCControlNode(Node):
     def __init__(self):
@@ -44,9 +45,9 @@ class ESCControlNode(Node):
 
         # ROS2 subscriptions
         self.port_subscription = self.create_subscription(
-            Float64, '/thrusters/left/thrust', self.port_callback, 10)
+            Float64, '/stinger/thruster_port/cmd_thrust', self.port_callback, 10)  # CHANGED: topic now matches throttle_controller
         self.stbd_subscription = self.create_subscription(
-            Float64, '/thrusters/right/thrust', self.stbd_callback, 10)
+            Float64, '/stinger/thruster_stbd/cmd_thrust', self.stbd_callback, 10)  # CHANGED: topic now matches throttle_controller
 
         self.get_logger().info('ESC control node started. Listening for thrust commands.')
 
@@ -57,8 +58,9 @@ class ESCControlNode(Node):
         self.set_pwm_thrust(STARBOARD_ESC_PIN, msg.data)
     
     def set_pwm_thrust(self, pin, thrust_value):
+        thrust_value = thrust_value * PERCENT_PER_NEWTON  # ADDED: convert Newtons to percent
         # Ensure thrust value is within bounds [0, 100]
-        thrust_value = max(0.0, min(100.0, thrust_value))
+        thrust_value = max(-100.0, min(100.0, thrust_value))  # CHANGED: was max(0.0, ...), now allows reverse
         
         # Convert thrust value to pulse width
         pulse_width = self.map_thrust_to_pulse(thrust_value)

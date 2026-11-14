@@ -6,6 +6,8 @@ This publishes topic /odom
 
 from ament_index_python import get_package_share_directory
 from launch import LaunchDescription
+from launch.actions import DeclareLaunchArgument  # ADDED
+from launch.substitutions import LaunchConfiguration  # ADDED
 from launch_ros.actions import Node
 import os
 
@@ -17,11 +19,12 @@ def generate_launch_description():
     navsat_transform_file_path = (pkg_share + '/config/navsat_transform.yaml')
 
     return LaunchDescription([
+        DeclareLaunchArgument('use_sim_time', default_value='true'),  # ADDED: real_robot.launch.py passes false
         Node(
             package='robot_localization',
             executable='ekf_node',
             name='ekf_filter_node',
-            parameters=[robot_localization_file_path],
+            parameters=[robot_localization_file_path, {'use_sim_time': LaunchConfiguration('use_sim_time')}],  # CHANGED: overrides use_sim_time in ekf.yaml
         ),    
         Node(
             package='robot_localization',

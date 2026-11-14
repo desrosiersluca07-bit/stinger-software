@@ -51,7 +51,7 @@ class CameraPublisher(Node):
             msg.header.stamp = self.get_clock().now().to_msg()
             
             # 2. Give the message a frame_id (required for RViz/Foxglove)
-            msg.header.frame_id = 'camera_link'
+            msg.header.frame_id = 'camera_0'  # CHANGED: was 'camera_link', now matches the URDF link
             # -----------------------
 
             # Publish the image frame

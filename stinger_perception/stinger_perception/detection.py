@@ -30,6 +30,8 @@ class Detection(Node):
         self.bridge = CvBridge()
         self.hsv = np.array([])
         self.frame = np.zeros([])
+        self.declare_parameter('show_debug', False)  # ADDED: set true to open cv2 windows (needs a display)
+        self.show_debug = self.get_parameter('show_debug').get_parameter_value().bool_value  # ADDED
         self.get_logger().info("Perception node initialized! Let there be light. You can see now.")
 
         # TODO: 6.1.a Understanding HSV
@@ -80,16 +82,25 @@ class Detection(Node):
         ##this works becausehue for green is only between 40 and 85so it doesnt wrap like red does.
         ### END STUDENT CODE
         
-        cv2.imshow("Red_mask", red_mask)
-        cv2.imshow("Green_mask", green_mask)
-        cv2.waitKey(1)
+        # ADDED: yellow goal buoy mask (starting HSV range, tune it)
+        self.yellow_lower = np.array([20, 100, 100])
+        self.yellow_upper = np.array([35, 255, 255])
+        yellow_mask = cv2.inRange(self.hsv, self.yellow_lower, self.yellow_upper)
+
+        if self.show_debug:  # CHANGED: windows only open when show_debug is true
+            cv2.imshow("Red_mask", red_mask)
+            cv2.imshow("Green_mask", green_mask)
+            cv2.imshow("Yellow_mask", yellow_mask)  # ADDED
+            cv2.waitKey(1)
 
         # Find contours for each color
         red_buoy_list = self.find_circles(red_mask, )
         green_buoy_list = self.find_circles(green_mask)
+        yellow_buoy_list = self.find_circles(yellow_mask)  # ADDED
 
         self.get_logger().info(f"Red buoys: {red_buoy_list}")
         self.get_logger().info(f"Green buoys: {green_buoy_list}")
+        self.get_logger().info(f"Yellow buoys: {yellow_buoy_list}")  # ADDED
 
         msg = Gate()
         if len(red_buoy_list) > 0:
@@ -101,6 +112,13 @@ class Detection(Node):
             msg.green_x = float(green_buoy_list[0][0])
         else:
             msg.green_x = -1.0
+
+        if len(yellow_buoy_list) > 0:  # ADDED: goal buoy x and size, -1.0 if not seen
+            msg.yellow_x = float(yellow_buoy_list[0][0])
+            msg.yellow_radius = float(yellow_buoy_list[0][2])
+        else:
+            msg.yellow_x = -1.0
+            msg.yellow_radius = -1.0
         
         self.gate_pos_pub.publish(msg)
 
@@ -122,7 +140,8 @@ class Detection(Node):
             if radius > 5:         #####TWEAK THIS
                 detected.append((x, y, radius))
             ### END STUDENT CODE
-        cv2.imshow("original_frame", self.frame)
+        if self.show_debug:  # CHANGED: only show the window when show_debug is true
+            cv2.imshow("original_frame", self.frame)
         detected_sorted = sorted(detected, key=lambda x: x[2], reverse=True)
         return detected_sorted
 

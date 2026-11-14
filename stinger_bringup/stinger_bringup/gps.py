@@ -26,12 +26,12 @@ class GpsPublisher(Node):
         baudrate = self.get_parameter('baudrate').get_parameter_value().integer_value
 
         self.serial_port = serial.Serial(port, baudrate, timeout=1)
-        self.publisher_ = self.create_publisher(NavSatFix, '/gps/fix', 10)
+        self.publisher_ = self.create_publisher(NavSatFix, '/stinger/gps/fix', 10)  # CHANGED: topic now matches navsat_transform remap
         
         self.timer = self.create_timer(0.5, self.read_serial_data)
 
     def read_serial_data(self):
-        if self.serial_port.in_waiting > 0:
+        while self.serial_port.in_waiting > 0:  # CHANGED: was 'if', now drains every waiting line so fixes aren't stale
             line = self.serial_port.readline().decode('ascii', errors='ignore').strip()
             if line.startswith('$GNGGA') or line.startswith('$GPGGA'): # for our case, it's GPGGA
                 self.parse_nmea_and_publish(line)
@@ -48,12 +48,16 @@ class GpsPublisher(Node):
             latitude = self.nmea_to_decimal(parts[2], parts[3])
             longitude = self.nmea_to_decimal(parts[4], parts[5])
             altitude = float(parts[9])
+            hdop = float(parts[8]) if parts[8] else 1.0  # ADDED: HDOP from the GGA sentence
 
             msg = NavSatFix()
             msg.latitude = latitude
             msg.longitude = longitude
             msg.altitude = altitude
-            msg.header.frame_id = 'gps_frame'
+            variance = (hdop * 2.5) ** 2  # ADDED: rough position variance in m^2 (2.5 m per HDOP)
+            msg.position_covariance = [variance, 0.0, 0.0, 0.0, variance, 0.0, 0.0, 0.0, variance * 4.0]  # ADDED
+            msg.position_covariance_type = NavSatFix.COVARIANCE_TYPE_APPROXIMATED  # ADDED
+            msg.header.frame_id = 'gps_link'  # CHANGED: was 'gps_frame', now matches the URDF link
             msg.header.stamp = self.get_clock().now().to_msg()
 
             # self.get_logger().info(f'GPS Fix:: Lat={latitude}, Long={longitude}, Alt={altitude}')
